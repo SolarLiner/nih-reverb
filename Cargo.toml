@@ -1,0 +1,20 @@
+[package]
+name = "nih_reverb"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[workspace]
+members = ["xtask"]
+
+[dependencies]
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ['simd'] }
+rand = "0.8.5"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev."nih_plug"]
+opt-level = 3
