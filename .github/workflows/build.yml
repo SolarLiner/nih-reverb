@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Bundle VST3
+      run: cargo xtask bundle nih_reverb --release
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        name: nih-reverb-${{ os }}
+        path: target/bundled/NIH Reverb.vst3
