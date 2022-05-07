@@ -15,15 +15,6 @@ impl<const LANES: usize> Allpass<LANES>
 where
     LaneCount<LANES>: SupportedLaneCount,
 {
-    pub fn reset(&mut self) {
-        self.delay.reset();
-    }
-}
-
-impl<const LANES: usize> Allpass<LANES>
-where
-    LaneCount<LANES>: SupportedLaneCount,
-{
     pub fn new(max_samples: usize) -> Self {
         Self {
             delay: Delay::new(max_samples),
@@ -37,8 +28,9 @@ where
         input: Simd<f32, LANES>,
     ) -> Simd<f32, LANES> {
         let fb = self.delay.tap(pos);
-        self.delay.push_next(input + fb * gain);
-        fb + input * gain
+        let out = input + fb * gain;
+        self.delay.push_next(out);
+        out
     }
 }
 
@@ -58,12 +50,6 @@ where
     pub fn new(delays: [f32; N]) -> Self {
         let ap = delays.map(|v| Allpass::new(v.ceil() as _));
         Self { ap, delays }
-    }
-
-    pub fn reset(&mut self) {
-        for ap in self.ap.iter_mut() {
-            ap.reset();
-        }
     }
 
     pub fn next_sample(

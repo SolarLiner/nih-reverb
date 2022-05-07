@@ -3,15 +3,15 @@
 #![feature(const_for)]
 
 use std::f32::consts::TAU;
-use std::simd::{f32x2, f32x8};
-use std::sync::Arc;
+use std::{
+    simd::{f32x2, f32x8, Simd},
+    sync::Arc,
+};
 
 use nih_plug::prelude::*;
-use rand::Rng;
 
 use early::Early;
 
-use crate::biquad::{Biquad, BiquadParams};
 use crate::delay::Delay;
 
 mod allpass;
@@ -29,6 +29,8 @@ struct DelayParams {
     size: FloatParam,
     #[id = "fbck"]
     feedback: FloatParam,
+    #[id = "delay"]
+    delay: FloatParam,
 }
 
 impl Default for DelayParams {
@@ -39,19 +41,21 @@ impl Default for DelayParams {
                 .with_string_to_value(formatters::s2v_f32_percentage())
                 .with_value_to_string(formatters::v2s_f32_percentage(2))
                 .with_smoother(SmoothingStyle::Linear(20.)),
-            feedback: FloatParam::new("Feedback", 0.5, FloatRange::Linear { min: 0., max: 1. })
+            feedback: FloatParam::new("Feedback", 0.5, FloatRange::Linear { min: 0., max: 1.25 })
                 .with_unit("%")
                 .with_string_to_value(formatters::s2v_f32_percentage())
                 .with_value_to_string(formatters::v2s_f32_percentage(2)),
+            delay: FloatParam::new("Delay", 1., FloatRange::Linear { min: 1e-3, max: 2. })
+                .with_unit("s")
+                .with_smoother(SmoothingStyle::Linear(200.)),
         }
     }
 }
 
 struct Reverb {
     params: Arc<DelayParams>,
-    early: Early<8>,
-    //bandpass: Biquad<8>,
-    delay: Delay<f32x8>,
+    diffusion: Early<4>,
+    delay: Delay<f32x2>,
     phase: f32,
 }
 
@@ -59,14 +63,14 @@ impl Default for Reverb {
     fn default() -> Self {
         Self {
             params: Arc::default(),
-            early: Early::new(44100.),
+            diffusion: Early::new(44100.),
             // bandpass: Biquad::new(BiquadParams::bandpass(
             //     f32x8::from_array(std::array::from_fn(|_| {
             //         0.1 + rand::thread_rng().gen_range(-0.06..0.1)
             //     })),
             //     f32x8::splat(1.),
             // )),
-            delay: Delay::new(44100),
+            delay: Delay::new(44100 * 2),
             phase: 0.,
         }
     }
@@ -89,13 +93,13 @@ impl Plugin for Reverb {
 
     fn initialize(
         &mut self,
-        bus_config: &BusConfig,
-        buffer_config: &BufferConfig,
+        _bus_config: &BusConfig,
+        _buffer_config: &BufferConfig,
         context: &mut impl ProcessContext,
     ) -> bool {
         let samplerate = context.transport().sample_rate;
-        self.early = Early::new(samplerate);
-        self.delay = Delay::new(samplerate as _);
+        self.diffusion = Early::new(samplerate);
+        self.delay = Delay::new((samplerate * 2.) as _);
         true
     }
 
@@ -131,24 +135,19 @@ impl Plugin for Reverb {
             }
             let feedback = self.params.feedback.smoothed.next();
             let size = self.params.size.smoothed.next();
-            let sample = channels.to_simd::<2>();
-            let sample = f32x8::from_array([
-                sample[0], sample[1], sample[0], sample[1], sample[0], sample[1], sample[0],
-                sample[1],
-            ]);
-            let early = householder::transform(self.early.next_sample(size, sample));
-            let early = simdmath::simd_f32tanh(early);
-            let sr = samplerate;
-            let delays = f32x8::from_array(
-                [6., 9., 13., 22., 48., 121., 251., 557.].map(|v| size * v * 1e-3 * sr),
-            );
-            let res = self.delay.get(delays);
-            let res = simdmath::simd_f32tanh(res);
-            // let res = self.bandpass.next_sample(res);
-            self.delay
-                .push_next(householder::transform(res * f32x8::splat(feedback)) + early);
+            let delay = self.params.delay.smoothed.next() + 5e-3 * f32::sin(TAU * self.phase);
 
-            channels.from_simd(f32x2::from_array([res[1], res[3]]));
+            let sample = channels.to_simd::<2>();
+            let delayed = sample + self.delay.tap(delay * samplerate) * Simd::splat(feedback);
+            let diffused = delayed;
+            let diffuse_input =
+                Simd::gather_or_default(delayed.as_array(), Simd::from_array([0, 1, 1, 0]));
+            let diffused = self.diffusion.next_sample(size, diffuse_input);
+            let diffused = f32x2::gather_or_default(diffused.as_array(), Simd::from_array([1, 2]));
+            let diffused = simdmath::simd_f32tanh(diffused);
+            self.delay.push_next(diffused);
+
+            channels.from_simd(diffused);
         }
         ProcessStatus::Normal
     }
