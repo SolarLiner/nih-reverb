@@ -22,7 +22,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2022-04-08
     - name: Bundle VST3
       run: cargo +nightly xtask bundle nih_reverb --release
     - name: Upload a Build Artifact
