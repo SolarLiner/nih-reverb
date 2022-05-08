@@ -30,13 +30,14 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: nightly-2022-04-08
+          components: clippy
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt
 
       - name: Run clippy
         run:
-          cargo +nightly clippy
+          cargo clippy
           --all-features
           --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
         continue-on-error: true
