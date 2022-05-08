@@ -74,10 +74,9 @@ where
     let four = Simd::splat(4.);
     let five = Simd::splat(5.);
 
-    return p[1]
-        + half
-            * t
-            * (p[2] - p[0]
-                + t * (two * p[0] - five * p[1] + four * p[2] - p[3]
-                    + t * (three * (p[1] - p[2]) + p[3] - p[0])));
+    p[1] + half
+        * t
+        * (p[2] - p[0]
+            + t * (two * p[0] - five * p[1] + four * p[2] - p[3]
+                + t * (three * (p[1] - p[2]) + p[3] - p[0])))
 }

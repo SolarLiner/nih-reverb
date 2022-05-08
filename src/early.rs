@@ -1,6 +1,4 @@
-use std::{
-    simd::{LaneCount, Simd, SupportedLaneCount},
-};
+use std::simd::{LaneCount, Simd, SupportedLaneCount};
 
 use crate::diffusion::Diffusion;
 

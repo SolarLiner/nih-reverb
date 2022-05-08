@@ -4,7 +4,7 @@ use std::simd::{LaneCount, Simd, SupportedLaneCount};
 use rand::prelude::*;
 
 use crate::delay::Delay;
-use crate::{hadamard, householder};
+use crate::householder;
 
 pub struct Diffusion<const L: usize>
 where

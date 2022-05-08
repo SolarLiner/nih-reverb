@@ -1,15 +1,21 @@
-use std::{f32::consts::TAU};
+use std::f32::consts::TAU;
 use std::simd::{LaneCount, Simd, SupportedLaneCount};
 
 use crate::simdmath::*;
 
 #[derive(Debug, Copy, Clone)]
-pub struct BiquadParams<const LANES: usize> where LaneCount<LANES>: SupportedLaneCount {
+pub struct BiquadParams<const LANES: usize>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     a: [Simd<f32, LANES>; 2],
     b: [Simd<f32, LANES>; 3],
 }
 
-impl<const LANES: usize> Default for BiquadParams<LANES> where LaneCount<LANES>: SupportedLaneCount {
+impl<const LANES: usize> Default for BiquadParams<LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     fn default() -> Self {
         Self {
             a: [Simd::splat(0.); 2],
@@ -18,7 +24,10 @@ impl<const LANES: usize> Default for BiquadParams<LANES> where LaneCount<LANES>:
     }
 }
 
-impl<const LANES: usize> BiquadParams<LANES> where LaneCount<LANES>: SupportedLaneCount {
+impl<const LANES: usize> BiquadParams<LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     pub fn bandpass(fc: Simd<f32, LANES>, q: Simd<f32, LANES>) -> Self {
         let w0 = Simd::splat(TAU) * fc;
         let cw0 = simd_f32cos(w0);
@@ -32,7 +41,7 @@ impl<const LANES: usize> BiquadParams<LANES> where LaneCount<LANES>: SupportedLa
         let a2 = Simd::splat(1.) - a;
 
         Self {
-            a: [a1/a0, a2/a0],
+            a: [a1 / a0, a2 / a0],
             b: [b0, b1, b2],
         }
     }
@@ -56,12 +65,18 @@ impl<const LANES: usize> BiquadParams<LANES> where LaneCount<LANES>: SupportedLa
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Biquad<const LANES: usize> where LaneCount<LANES>: SupportedLaneCount {
+pub struct Biquad<const LANES: usize>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     pub(crate) params: BiquadParams<LANES>,
     state: [Simd<f32, LANES>; 2],
 }
 
-impl<const LANES: usize> Default for Biquad<LANES> where LaneCount<LANES>: SupportedLaneCount {
+impl<const LANES: usize> Default for Biquad<LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     fn default() -> Self {
         Self {
             params: BiquadParams::default(),
@@ -70,7 +85,10 @@ impl<const LANES: usize> Default for Biquad<LANES> where LaneCount<LANES>: Suppo
     }
 }
 
-impl<const LANES: usize> Biquad<LANES> where LaneCount<LANES>: SupportedLaneCount {
+impl<const LANES: usize> Biquad<LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
     pub fn new(params: BiquadParams<LANES>) -> Self {
         Self {
             params,

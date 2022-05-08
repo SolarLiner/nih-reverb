@@ -4,7 +4,7 @@
 
 use std::f32::consts::TAU;
 use std::{
-    simd::{f32x2, f32x8, Simd},
+    simd::{f32x2, Simd},
     sync::Arc,
 };
 
@@ -14,7 +14,6 @@ use early::Early;
 
 use crate::delay::Delay;
 
-mod allpass;
 mod biquad;
 mod delay;
 mod diffusion;
@@ -139,7 +138,6 @@ impl Plugin for Reverb {
 
             let sample = channels.to_simd::<2>();
             let delayed = sample + self.delay.tap(delay * samplerate) * Simd::splat(feedback);
-            let diffused = delayed;
             let diffuse_input =
                 Simd::gather_or_default(delayed.as_array(), Simd::from_array([0, 1, 1, 0]));
             let diffused = self.diffusion.next_sample(size, diffuse_input);
