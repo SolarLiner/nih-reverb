@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Bundle VST3
-      run: cargo xtask bundle nih_reverb --release
+      run: cargo +nightly xtask bundle nih_reverb --release
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.0.0
       with:
