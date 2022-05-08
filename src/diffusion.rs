@@ -39,11 +39,13 @@ where
         }
     }
 
-    pub fn next_sample(&mut self, size: f32, input: Simd<f32, L>) -> Simd<f32, L> {
+    pub fn next_sample(&mut self, size: f32, mod_depth: f32, input: Simd<f32, L>) -> Simd<f32, L> {
         let delays = std::array::from_fn(|i| {
             let t = i as f32 / L as f32;
             self.samplerate
-                * (300e-3 * t * size + self.offsets[i] + 1e-3 * f32::sin(TAU * self.phases[i]))
+                * (300e-3 * t * size
+                    + self.offsets[i]
+                    + 3e-3 * mod_depth * f32::sin(TAU * self.phases[i]))
         });
         for p in &mut self.phases {
             *p += 0.3 / self.samplerate;
@@ -66,7 +68,7 @@ where
 {
     let in_arr = inp.as_array();
     let out_arr = std::array::from_fn(|n| {
-        let i = (n * 187 + 288) % N;
+        let i = (n * 187 + 289) % N;
         let k = if (n % 2) == 0 { 1. } else { -1. };
         in_arr[i] * k
     });

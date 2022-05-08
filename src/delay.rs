@@ -37,13 +37,13 @@ where
 
     // Cubic interpolation
     pub fn tap(&mut self, pos: f32) -> Simd<f32, L> {
-        let ix = pos.floor() as _;
+        let ix = pos.floor() as usize;
         let f = pos.fract();
 
-        let a0 = self.sample(ix - 2);
-        let a1 = self.sample(ix - 1);
+        let a0 = self.sample(ix.saturating_sub(2));
+        let a1 = self.sample(ix.saturating_sub(1));
         let b0 = self.sample(ix);
-        let b1 = self.sample(ix + 1);
+        let b1 = self.sample(ix.saturating_add(1));
 
         cubic(f, [a0, a1, b0, b1])
     }
@@ -56,12 +56,12 @@ where
         return s;
     }
 
-    fn sample(&self, i: isize) -> Simd<f32, L> {
+    fn sample(&self, i: usize) -> Simd<f32, L> {
         if self.buffer.is_empty() {
             return Simd::splat(0.);
         }
-        let index = (i + self.buffer.len() as isize) % self.buffer.len() as isize;
-        self.buffer[index as usize]
+        let index = i.clamp(0, self.buffer.len());
+        self.buffer[index]
     }
 }
 

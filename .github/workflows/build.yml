@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install minimal nightly with clippy and rustfmt
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        override: true
+        toolchain: nightly-2022-04-08
+    - name: Bundle VST3
+      run: cargo xtask bundle nih_reverb --release
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        name: nih-reverb-${{ matrix.os }}
+        path: target/bundled/NIH Reverb.vst3
