@@ -22,6 +22,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
+        override: true
         toolchain: nightly-2022-04-08
     - name: Bundle VST3
       run: cargo xtask bundle nih_reverb --release

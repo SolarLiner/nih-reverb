@@ -31,6 +31,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly-2022-04-08
+          override: true
           components: clippy
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt
