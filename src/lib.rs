@@ -32,6 +32,8 @@ struct DelayParams {
     feedback: FloatParam,
     #[id = "delay"]
     delay: FloatParam,
+    #[id = "mod"]
+    mod_depth: FloatParam,
     #[id = "dlow"]
     damp_low: FloatParam,
     #[id = "dhigh"]
@@ -46,13 +48,26 @@ impl Default for DelayParams {
                 .with_string_to_value(formatters::s2v_f32_percentage())
                 .with_value_to_string(formatters::v2s_f32_percentage(2))
                 .with_smoother(SmoothingStyle::Linear(20.)),
-            feedback: FloatParam::new("Feedback", 0.5, FloatRange::Linear { min: 0., max: 1.25 })
+            feedback: FloatParam::new("Feedback", 0.7, FloatRange::Linear { min: 0., max: 1.25 })
                 .with_unit("%")
                 .with_string_to_value(formatters::s2v_f32_percentage())
                 .with_value_to_string(formatters::v2s_f32_percentage(2)),
-            delay: FloatParam::new("Delay", 1., FloatRange::Linear { min: 1e-3, max: 2. })
+            delay: FloatParam::new("Delay", 0.2, FloatRange::Linear { min: 1e-3, max: 2. })
                 .with_unit("s")
                 .with_smoother(SmoothingStyle::Linear(200.)),
+            mod_depth: FloatParam::new(
+                "Mod Depth",
+                0.1,
+                FloatRange::Skewed {
+                    min: 0.,
+                    max: 1.,
+                    factor: FloatRange::skew_factor(-2.),
+                },
+            )
+            .with_unit("%")
+            .with_string_to_value(formatters::s2v_f32_percentage())
+            .with_value_to_string(formatters::v2s_f32_percentage(2))
+            .with_smoother(SmoothingStyle::Linear(200.)),
             damp_low: FloatParam::new(
                 "Low Damping",
                 100.,
@@ -116,18 +131,23 @@ impl Reverb {
 
     fn next_sample(
         &mut self,
-        sample: Simd<f32, 2>,
-        delay: f32,
         samplerate: f32,
-        feedback: f32,
         size: f32,
+        feedback: f32,
+        delay: f32,
+        mod_depth: f32,
+        sample: Simd<f32, 2>,
     ) -> Simd<f32, 2> {
-        let delayed = sample + self.delay.tap(delay * samplerate) * Simd::splat(feedback);
+        let delayed = sample
+            + self
+                .delay
+                .tap((delay * samplerate).max(1.).min(samplerate - 1.))
+                * Simd::splat(feedback);
         // let delayed = self.damp_low.next_sample(delayed);
         // let delayed = self.damp_high.next_sample(delayed);
         let diffuse_input =
             Simd::gather_or_default(delayed.as_array(), Simd::from_array([0, 1, 0, 1]));
-        let diffused = self.diffusion.next_sample(size, diffuse_input);
+        let diffused = self.diffusion.next_sample(size, mod_depth, diffuse_input);
         let diffused = f32x2::gather_or_default(diffused.as_array(), Simd::from_array([0, 1]));
         let diffused = simd_f32tanh(diffused);
         self.delay.push_next(diffused);
@@ -178,7 +198,9 @@ impl Plugin for Reverb {
         for mut channels in buffer.iter_samples() {
             let feedback = self.params.feedback.smoothed.next();
             let size = self.params.size.smoothed.next();
-            let delay = self.params.delay.smoothed.next() + 5e-3 * f32::sin(TAU * self.phase);
+            let mod_depth = self.params.mod_depth.smoothed.next();
+            let delay =
+                self.params.delay.smoothed.next() + 15e-3 * mod_depth * f32::sin(TAU * self.phase);
 
             self.damp_low.params = BiquadParams::lowpass_1p(
                 Simd::splat(self.params.damp_low.smoothed.next()),
@@ -192,7 +214,8 @@ impl Plugin for Reverb {
             self.tick_phase(samplerate);
 
             let sample = channels.to_simd::<2>();
-            channels.from_simd(self.next_sample(sample, delay, samplerate, feedback, size));
+            channels
+                .from_simd(self.next_sample(samplerate, size, feedback, delay, mod_depth, sample));
         }
         ProcessStatus::Normal
     }
