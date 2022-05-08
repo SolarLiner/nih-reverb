@@ -37,3 +37,11 @@ where
 {
     simd_f32func(f32::sin, x)
 }
+
+#[inline(always)]
+pub fn simd_f32tan<const LANES: usize>(x: Simd<f32, LANES>) -> Simd<f32, { LANES }>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
+    simd_f32func(f32::tan, x)
+}

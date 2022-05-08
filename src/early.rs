@@ -16,7 +16,7 @@ where
     pub fn new(samplerate: f32) -> Self {
         Self {
             ap: std::array::from_fn(|i| {
-                Diffusion::new(samplerate * (1. + (i as f32 / LANES as f32).powi(2)))
+                Diffusion::new(150e-3 * samplerate * (1. + (i as f32 / LANES as f32).powi(2)))
             }),
         }
     }

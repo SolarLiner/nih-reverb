@@ -57,6 +57,9 @@ where
     }
 
     fn sample(&self, i: isize) -> Simd<f32, L> {
+        if self.buffer.is_empty() {
+            return Simd::splat(0.);
+        }
         let index = (i + self.buffer.len() as isize) % self.buffer.len() as isize;
         self.buffer[index as usize]
     }
