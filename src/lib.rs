@@ -16,8 +16,8 @@ use simdmath::simd_f32tanh;
 
 use crate::delay::Delay;
 
-mod biquad;
-mod delay;
+pub mod biquad;
+pub mod delay;
 mod diffusion;
 mod early;
 mod hadamard;
@@ -78,7 +78,6 @@ impl Default for DelayParams {
                 },
             )
             .with_smoother(SmoothingStyle::Logarithmic(100.))
-            .with_unit("Hz")
             .with_string_to_value(formatters::s2v_f32_hz_then_khz())
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
             damp_high: FloatParam::new(
@@ -91,7 +90,6 @@ impl Default for DelayParams {
                 },
             )
             .with_smoother(SmoothingStyle::Logarithmic(100.))
-            .with_unit("Hz")
             .with_string_to_value(formatters::s2v_f32_hz_then_khz())
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
         }
@@ -113,14 +111,8 @@ impl Reverb {
             params: params.clone(),
             diffusion: Early::new(samplerate),
             delay: Delay::new(samplerate as usize * 2),
-            damp_low: Biquad::new(BiquadParams::lowpass_1p(
-                Simd::splat(params.damp_low.value / samplerate),
-                Simd::splat(1.),
-            )),
-            damp_high: Biquad::new(BiquadParams::highpass_1p(
-                Simd::splat(params.damp_high.value / samplerate),
-                Simd::splat(1.),
-            )),
+            damp_low: Biquad::default(),
+            damp_high: Biquad::default(),
             phase: 0.,
         }
     }
@@ -143,8 +135,8 @@ impl Reverb {
                 .delay
                 .tap((delay * samplerate).max(1.).min(samplerate - 1.))
                 * Simd::splat(feedback);
-        // let delayed = self.damp_low.next_sample(delayed);
-        // let delayed = self.damp_high.next_sample(delayed);
+        let delayed = self.damp_low.next_sample(delayed);
+        let delayed = self.damp_high.next_sample(delayed);
         let diffuse_input =
             Simd::gather_or_default(delayed.as_array(), Simd::from_array([0, 1, 0, 1]));
         let diffused = self.diffusion.next_sample(size, mod_depth, diffuse_input);
@@ -186,14 +178,19 @@ impl Plugin for Reverb {
     fn initialize(
         &mut self,
         _bus_config: &BusConfig,
-        _buffer_config: &BufferConfig,
-        context: &mut impl ProcessContext,
+        buffer_config: &BufferConfig,
+        _context: &mut impl InitContext,
     ) -> bool {
-        *self = Self::new_with_params(self.params.clone(), context.transport().sample_rate);
+        *self = Self::new_with_params(self.params.clone(), buffer_config.sample_rate);
         true
     }
 
-    fn process(&mut self, buffer: &mut Buffer, context: &mut impl ProcessContext) -> ProcessStatus {
+    fn process(
+        &mut self,
+        buffer: &mut Buffer,
+        _aux: &mut AuxiliaryBuffers,
+        context: &mut impl ProcessContext,
+    ) -> ProcessStatus {
         let samplerate = context.transport().sample_rate;
         for mut channels in buffer.iter_samples() {
             let feedback = self.params.feedback.smoothed.next();
@@ -202,30 +199,37 @@ impl Plugin for Reverb {
             let delay =
                 self.params.delay.smoothed.next() + 15e-3 * mod_depth * f32::sin(TAU * self.phase);
 
-            self.damp_low.params = BiquadParams::lowpass_1p(
-                Simd::splat(self.params.damp_low.smoothed.next()),
+            self.damp_low.params = BiquadParams::highpass_1p(
+                Simd::splat(self.params.damp_low.smoothed.next() / samplerate / 2.0),
                 Simd::splat(1.),
             );
-            self.damp_high.params = BiquadParams::highpass_1p(
-                Simd::splat(self.params.damp_high.smoothed.next()),
+            self.damp_high.params = BiquadParams::lowpass_1p(
+                Simd::splat(self.params.damp_high.smoothed.next() / samplerate / 2.0),
                 Simd::splat(1.),
             );
 
             self.tick_phase(samplerate);
 
-            let sample = channels.to_simd::<2>();
-            channels
-                .from_simd(self.next_sample(samplerate, size, feedback, delay, mod_depth, sample));
+            channels.from_simd(self.next_sample(
+                samplerate,
+                size,
+                feedback,
+                delay,
+                mod_depth,
+                channels.to_simd::<2>(),
+            ));
         }
         ProcessStatus::Normal
     }
 }
 
+#[cfg(feature = "vst3")]
 impl Vst3Plugin for Reverb {
     const VST3_CLASS_ID: [u8; 16] = *b"SolarLinerNihPlg";
     const VST3_CATEGORIES: &'static str = "Fx|Delay|Reverb";
 }
 
+#[cfg(feature = "vst3")]
 nih_export_vst3!(Reverb);
 
 #[cfg(test)]

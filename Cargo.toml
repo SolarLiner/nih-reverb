@@ -4,17 +4,29 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["rlib", "cdylib"]
 
 [workspace]
-members = ["xtask"]
+members = ["xtask", "plugin-biquad"]
+
+[features]
+vst3 = []
 
 [dependencies]
-nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ['simd'] }
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
+    'simd',
+] }
 rand = "0.8.5"
+
+[profile.release]
+lto = false
+incremental = false
+codegen-units = 1
+debug = true
 
 [profile.dev]
 opt-level = 1
+lto = false
 
 [profile.dev."nih_plug"]
 opt-level = 3

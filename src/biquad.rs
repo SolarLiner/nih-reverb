@@ -97,7 +97,7 @@ pub struct Biquad<const LANES: usize>
 where
     LaneCount<LANES>: SupportedLaneCount,
 {
-    pub(crate) params: BiquadParams<LANES>,
+    pub params: BiquadParams<LANES>,
     state: [Simd<f32, LANES>; 2],
 }
 

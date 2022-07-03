@@ -28,7 +28,7 @@ where
                 let zeros = Simd::splat(-1.);
                 let ones = Simd::splat(1.);
                 let (_, res) = zeros.interleave(ones);
-                dbg!(res)
+                res
             },
             offsets: {
                 let mut rng = thread_rng();

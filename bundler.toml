@@ -1,2 +1,5 @@
 [nih_reverb]
 name = "NIH Reverb"
+
+[plugin-biquad]
+name = "NIH Reverb Biquad"
