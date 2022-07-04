@@ -36,4 +36,10 @@ where
             .iter_mut()
             .fold(input, |s, ap| ap.next_sample(size, mod_depth, s))
     }
+
+    pub fn next_block(&mut self, size: &[f32], mod_depth: &[f32], buffer: &mut [Simd<f32, LANES>]) {
+        for diffuse in self.ap.iter_mut() {
+            diffuse.next_block(size, mod_depth, buffer);
+        }
+    }
 }

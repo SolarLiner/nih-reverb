@@ -12,6 +12,7 @@ use biquad::{Biquad, BiquadParams};
 use nih_plug::prelude::*;
 
 use early::Early;
+use pitch::PitchShifter;
 use simdmath::simd_f32tanh;
 
 use crate::delay::Delay;
@@ -22,6 +23,7 @@ mod diffusion;
 mod early;
 mod hadamard;
 mod householder;
+pub mod pitch;
 mod simdmath;
 
 #[derive(Params)]
@@ -32,12 +34,16 @@ struct DelayParams {
     feedback: FloatParam,
     #[id = "delay"]
     delay: FloatParam,
-    #[id = "mod"]
+    #[id = "mddpt"]
     mod_depth: FloatParam,
+    #[id = "mdspd"]
+    mod_speed: FloatParam,
     #[id = "dlow"]
     damp_low: FloatParam,
     #[id = "dhigh"]
     damp_high: FloatParam,
+    #[id = "shimr"]
+    pitch_amt: FloatParam,
 }
 
 impl Default for DelayParams {
@@ -68,6 +74,18 @@ impl Default for DelayParams {
             .with_string_to_value(formatters::s2v_f32_percentage())
             .with_value_to_string(formatters::v2s_f32_percentage(2))
             .with_smoother(SmoothingStyle::Linear(200.)),
+            mod_speed: FloatParam::new(
+                "Mod Speed",
+                0.3,
+                FloatRange::Skewed {
+                    min: 1e-3,
+                    max: 3.0,
+                    factor: FloatRange::skew_factor(-1.0),
+                },
+            )
+            .with_smoother(SmoothingStyle::Exponential(150.0))
+            .with_string_to_value(formatters::s2v_f32_hz_then_khz())
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
             damp_low: FloatParam::new(
                 "Low Damping",
                 100.,
@@ -92,6 +110,10 @@ impl Default for DelayParams {
             .with_smoother(SmoothingStyle::Logarithmic(100.))
             .with_string_to_value(formatters::s2v_f32_hz_then_khz())
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(2)),
+            pitch_amt: FloatParam::new("Shimmer", 0.0, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_smoother(SmoothingStyle::Linear(100.0))
+                .with_string_to_value(formatters::s2v_f32_percentage())
+                .with_value_to_string(formatters::v2s_f32_percentage(2)),
         }
     }
 }
@@ -102,17 +124,19 @@ struct Reverb {
     delay: Delay<f32x2>,
     damp_low: Biquad<2>,
     damp_high: Biquad<2>,
+    pitch: PitchShifter<2>,
     phase: f32,
 }
 
 impl Reverb {
     fn new_with_params(params: Arc<DelayParams>, samplerate: f32) -> Self {
         Self {
-            params: params.clone(),
+            params,
             diffusion: Early::new(samplerate),
             delay: Delay::new(samplerate as usize * 2),
             damp_low: Biquad::default(),
             damp_high: Biquad::default(),
+            pitch: PitchShifter::new(f32::ceil(300.0 * samplerate) as _),
             phase: 0.,
         }
     }
@@ -128,6 +152,7 @@ impl Reverb {
         feedback: f32,
         delay: f32,
         mod_depth: f32,
+        pitch_amt: f32,
         sample: Simd<f32, 2>,
     ) -> Simd<f32, 2> {
         let delayed = sample
@@ -141,13 +166,15 @@ impl Reverb {
             Simd::gather_or_default(delayed.as_array(), Simd::from_array([0, 1, 0, 1]));
         let diffused = self.diffusion.next_sample(size, mod_depth, diffuse_input);
         let diffused = f32x2::gather_or_default(diffused.as_array(), Simd::from_array([0, 1]));
+        let shifted = self.pitch.next_sample(samplerate, 2., diffused);
+        let diffused = diffused * Simd::splat(1.0 - pitch_amt) + shifted * Simd::splat(pitch_amt);
         let diffused = simd_f32tanh(diffused);
         self.delay.push_next(diffused);
         diffused
     }
 
-    fn tick_phase(&mut self, samplerate: f32) {
-        self.phase += 0.3 / samplerate;
+    fn tick_phase(&mut self, samplerate: f32, mod_speed: f32) {
+        self.phase += mod_speed / samplerate;
         if self.phase > 1. {
             self.phase -= 1.;
         }
@@ -196,6 +223,8 @@ impl Plugin for Reverb {
             let feedback = self.params.feedback.smoothed.next();
             let size = self.params.size.smoothed.next();
             let mod_depth = self.params.mod_depth.smoothed.next();
+            let mod_speed = self.params.mod_speed.smoothed.next();
+            let pitch_amt = self.params.pitch_amt.smoothed.next();
             let delay =
                 self.params.delay.smoothed.next() + 15e-3 * mod_depth * f32::sin(TAU * self.phase);
 
@@ -208,7 +237,7 @@ impl Plugin for Reverb {
                 Simd::splat(1.),
             );
 
-            self.tick_phase(samplerate);
+            self.tick_phase(samplerate, mod_speed);
 
             channels.from_simd(self.next_sample(
                 samplerate,
@@ -216,6 +245,7 @@ impl Plugin for Reverb {
                 feedback,
                 delay,
                 mod_depth,
+                pitch_amt,
                 channels.to_simd::<2>(),
             ));
         }

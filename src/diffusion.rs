@@ -1,6 +1,7 @@
 use std::f32::consts::TAU;
 use std::simd::{LaneCount, Simd, SupportedLaneCount};
 
+use nih_plug::nih_debug_assert;
 use rand::prelude::*;
 
 use crate::delay::Delay;
@@ -59,6 +60,17 @@ where
 
         householder::transform(self.polarity * taps)
         // taps
+    }
+
+    pub fn next_block(&mut self, size: &[f32], mod_depth: &[f32], buffer: &mut [Simd<f32, L>]) {
+        nih_debug_assert!(size.len() == mod_depth.len() && mod_depth.len() == buffer.len());
+
+        for (i, sample) in buffer.into_iter().enumerate() {
+            let size = size[i];
+            let mod_depth = mod_depth[i];
+            let out = self.next_sample(size, mod_depth, *sample);
+            *sample = out;
+        }
     }
 }
 

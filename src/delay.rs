@@ -13,6 +13,10 @@ impl<T> Delay<T> {
         self.buffer.pop_back();
         self.buffer.push_front(next);
     }
+
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
 }
 
 impl<T: Default> Delay<T> {
@@ -37,6 +41,7 @@ where
 
     // Cubic interpolation
     pub fn tap(&mut self, pos: f32) -> Simd<f32, L> {
+        let pos = (pos + self.buffer.len() as f32) % self.buffer.len() as f32;
         let ix = pos.floor() as usize;
         let f = pos.fract();
 
