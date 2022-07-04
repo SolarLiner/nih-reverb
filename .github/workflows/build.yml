@@ -25,9 +25,9 @@ jobs:
         override: true
         toolchain: nightly-2022-04-08
     - name: Bundle VST3
-      run: cargo xtask bundle nih_reverb --release
+      run: cargo xtask bundle nih_reverb --release --features vst3
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.0.0
       with:
         name: nih-reverb-${{ matrix.os }}
-        path: target/release/bundled/NIH Reverb.vst3
+        path: target/bundled/NIH Reverb.vst3
