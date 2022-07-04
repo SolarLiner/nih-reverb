@@ -30,4 +30,4 @@ jobs:
       uses: actions/upload-artifact@v3.0.0
       with:
         name: nih-reverb-${{ matrix.os }}
-        path: target/bundled/NIH Reverb.vst3
+        path: target/release/bundled/NIH Reverb.vst3
