@@ -1,3 +1,8 @@
+// Copyright (c) 2022 solarliner
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #![feature(portable_simd)]
 #![feature(array_from_fn)]
 #![feature(const_for)]

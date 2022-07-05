@@ -1,3 +1,8 @@
+// Copyright (c) 2022 solarliner
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use std::simd::{LaneCount, Simd, SupportedLaneCount};
 
 use crate::diffusion::Diffusion;

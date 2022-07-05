@@ -1,3 +1,8 @@
+// Copyright (c) 2022 solarliner
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 use std::{
     collections::VecDeque,
     simd::{LaneCount, Simd, SupportedLaneCount},
