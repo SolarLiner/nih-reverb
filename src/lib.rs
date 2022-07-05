@@ -198,11 +198,11 @@ impl Default for Reverb {
 }
 
 impl Plugin for Reverb {
-    const NAME: &'static str = "Delay";
-    const VENDOR: &'static str = "SolarLiner";
-    const URL: &'static str = "N/A";
+    const NAME: &'static str = "NIH Reverb";
+    const VENDOR: &'static str = env!("CARGO_PKG_AUTHORS");
+    const URL: &'static str = env!("CARGO_PKG_HOMEPAGE");
     const EMAIL: &'static str = "N/A";
-    const VERSION: &'static str = "0.0.2";
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     fn params(&self) -> Arc<dyn Params> {
         self.params.clone()
