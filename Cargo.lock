@@ -85,9 +85,8 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap-sys"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a8aa914ef6a42441b5ef7884eef20c6d38bd5b24c3c9eba865b08bf3353bc11"
+version = "0.2.0"
+source = "git+https://github.com/glowcoil/clap-sys.git?rev=efc0940651c3a57a3f9402bf3798cda9a7f7fc87#efc0940651c3a57a3f9402bf3798cda9a7f7fc87"
 
 [[package]]
 name = "crossbeam"
@@ -262,7 +261,7 @@ dependencies = [
 [[package]]
 name = "nih_plug"
 version = "0.0.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#24d499e71614e73cce74e96cb8504aee49ebac2a"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
 dependencies = [
  "atomic_float",
  "atomic_refcell",
@@ -290,7 +289,7 @@ dependencies = [
 [[package]]
 name = "nih_plug_derive"
 version = "0.1.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#24d499e71614e73cce74e96cb8504aee49ebac2a"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
 dependencies = [
  "quote",
  "syn",
@@ -299,7 +298,7 @@ dependencies = [
 [[package]]
 name = "nih_plug_xtask"
 version = "0.1.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#24d499e71614e73cce74e96cb8504aee49ebac2a"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
 dependencies = [
  "anyhow",
  "goblin",
