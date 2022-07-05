@@ -14,9 +14,11 @@ use std::{
 };
 
 use biquad::{Biquad, BiquadParams};
+use editor::DelayEditor;
 use nih_plug::prelude::*;
 
 use early::Early;
+use nih_plug_vizia::ViziaState;
 use pitch::PitchShifter;
 use simdmath::simd_f32tanh;
 
@@ -26,6 +28,7 @@ pub mod biquad;
 pub mod delay;
 mod diffusion;
 mod early;
+mod editor;
 mod hadamard;
 mod householder;
 pub mod pitch;
@@ -47,7 +50,7 @@ struct DelayParams {
     damp_low: FloatParam,
     #[id = "dhigh"]
     damp_high: FloatParam,
-    #[id = "shimr"]
+    // #[id = "shimr"]
     pitch_amt: FloatParam,
 }
 
@@ -125,6 +128,7 @@ impl Default for DelayParams {
 
 struct Reverb {
     params: Arc<DelayParams>,
+    editor_state: Arc<ViziaState>,
     diffusion: Early<4>,
     delay: Delay<f32x2>,
     damp_low: Biquad<2>,
@@ -137,6 +141,7 @@ impl Reverb {
     fn new_with_params(params: Arc<DelayParams>, samplerate: f32) -> Self {
         Self {
             params,
+            editor_state: DelayEditor::default_state(),
             diffusion: Early::new(samplerate),
             delay: Delay::new(samplerate as usize * 2),
             damp_low: Biquad::default(),
@@ -203,6 +208,10 @@ impl Plugin for Reverb {
         self.params.clone()
     }
 
+    fn editor(&self) -> Option<Box<dyn Editor>> {
+        DelayEditor::create(self.params.clone(), self.editor_state.clone())
+    }
+
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
         config.num_input_channels == config.num_output_channels && config.num_input_channels == 2
     }
@@ -234,11 +243,11 @@ impl Plugin for Reverb {
                 self.params.delay.smoothed.next() + 15e-3 * mod_depth * f32::sin(TAU * self.phase);
 
             self.damp_low.params = BiquadParams::highpass_1p(
-                Simd::splat(self.params.damp_low.smoothed.next() / samplerate / 2.0),
+                Simd::splat(self.params.damp_low.smoothed.next() / samplerate),
                 Simd::splat(1.),
             );
             self.damp_high.params = BiquadParams::lowpass_1p(
-                Simd::splat(self.params.damp_high.smoothed.next() / samplerate / 2.0),
+                Simd::splat(self.params.damp_high.smoothed.next() / samplerate),
                 Simd::splat(1.),
             );
 

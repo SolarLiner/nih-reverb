@@ -16,6 +16,7 @@ vst3 = []
 nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
     'simd',
 ] }
+nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
 rand = "0.8.5"
 
 [profile.release]
