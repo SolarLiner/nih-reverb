@@ -1,5 +1,5 @@
 // Copyright (c) 2022 solarliner
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
@@ -70,7 +70,7 @@ where
         if self.buffer.is_empty() {
             return Simd::splat(0.);
         }
-        let index = i.clamp(0, self.buffer.len());
+        let index = i.clamp(0, self.buffer.len() - 1);
         self.buffer[index]
     }
 }
