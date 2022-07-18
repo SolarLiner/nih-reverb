@@ -166,8 +166,9 @@ dependencies = [
 
 [[package]]
 name = "clap-sys"
-version = "0.2.0"
-source = "git+https://github.com/glowcoil/clap-sys.git?rev=efc0940651c3a57a3f9402bf3798cda9a7f7fc87#efc0940651c3a57a3f9402bf3798cda9a7f7fc87"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27f4e06657d33d5d194db1155cef359c359483a4170362bf4e105146dd0109e3"
 
 [[package]]
 name = "clipboard-win"
@@ -1002,7 +1003,7 @@ checksum = "e1bcdd74c20ad5d95aacd60ef9ba40fdf77f767051040541df557b7a9b2a2121"
 [[package]]
 name = "nih_plug"
 version = "0.0.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#ba7b5a3b32e34664498aa51ab844a8adc8ef1d82"
 dependencies = [
  "atomic_float",
  "atomic_refcell",
@@ -1035,7 +1036,7 @@ source = "git+https://github.com/robbert-vdh/nih_plug_assets.git#a04e327923e120b
 [[package]]
 name = "nih_plug_derive"
 version = "0.1.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#ba7b5a3b32e34664498aa51ab844a8adc8ef1d82"
 dependencies = [
  "quote",
  "syn",
@@ -1044,19 +1045,20 @@ dependencies = [
 [[package]]
 name = "nih_plug_vizia"
 version = "0.0.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#ba7b5a3b32e34664498aa51ab844a8adc8ef1d82"
 dependencies = [
  "baseview",
  "crossbeam",
  "nih_plug",
  "nih_plug_assets",
+ "serde",
  "vizia",
 ]
 
 [[package]]
 name = "nih_plug_xtask"
 version = "0.1.0"
-source = "git+https://github.com/robbert-vdh/nih-plug.git#a2f8a9bebf61cf888d687dba2676fd6ee53a4115"
+source = "git+https://github.com/robbert-vdh/nih-plug.git#ba7b5a3b32e34664498aa51ab844a8adc8ef1d82"
 dependencies = [
  "anyhow",
  "goblin",
